@@ -32,7 +32,7 @@ optanm = ContinuationPar(optcont, ds= 0.01, newtonOptions = NewtonPar(tol = 1e-9
 
 branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 2)
 
-plot(branm.branch)
+plot(branm)
 plot(branm, plotseries = true)
 
 plot!(br0, color = :black)

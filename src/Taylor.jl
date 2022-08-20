@@ -1,7 +1,7 @@
 """
 $(SIGNATURES)
 
-Continuation algorithm based on Asymptotic Numerical Method.
+Continuation algorithm based on Asymptotic Numerical Method. It can be used from the package https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl
 
 ## Fields
 
