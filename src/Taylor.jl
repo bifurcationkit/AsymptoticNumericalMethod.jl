@@ -6,9 +6,17 @@ Continuation algorithm based on Asymptotic Numerical Method. It can be used from
 ## Fields
 
 $(TYPEDFIELDS)
+
+## References
+
+- Charpentier, Isabelle, Bruno Cochelin, and Komlanvi Lampoh. “Diamanlab - An Interactive Taylor-Based Continuation Tool in MATLAB,” n.d., 12.
+
+- Rubbert, Lennart, Isabelle Charpentier, Simon Henein, and Pierre Renaud. “Higher-Order Continuation Method for the Rigid-Body Kinematic Design of Compliant Mechanisms”, n.d., 18.
 """
 struct ANM{T} <: BK.AbstractContinuationAlgorithm
+	"order of the polynomial approximation"
 	order::Int
+	"tolerance which is used to estimate the neighbourhood on which the polynomial approximation is valid"
 	tol::T
 end
 
@@ -21,7 +29,7 @@ $(SIGNATURES)
 - `alg::` ANM continuation algorithm. See [`ANM`](@ref).
 - `contParams` see [`BK.ContinuationPar`](@ref)
 """
-function BifurcationKit.continuation(prob::BK.AbstractBifurcationProblem,
+function BK.continuation(prob::BK.AbstractBifurcationProblem,
 				alg::ANM,
 				contParams::BK.ContinuationPar{T, L, E};
 				linearAlgo = MatrixBLS(),
@@ -30,7 +38,9 @@ function BifurcationKit.continuation(prob::BK.AbstractBifurcationProblem,
 				dotPALC = (x,y) -> dot(x, y) / length(x),
 				finaliseSolution = BK.finaliseDefault,
 				callbackN = BifurcationKit.cbDefault,
-				verbosity = 0) where {T, L <: BK.AbstractLinearSolver, E <: BK.AbstractEigenSolver}
+				kind = BK.EquilibriumCont(),
+				verbosity = 0,
+				kwargs...) where {T, L <: BK.AbstractLinearSolver, E <: BK.AbstractEigenSolver}
 
 	it = BK.ContIterable(prob, alg, contParams; finaliseSolution = finaliseSolution, callbackN = callbackN, dotPALC = dotPALC, normC = normC, verbosity = verbosity, plot = plot)
 
@@ -138,7 +148,7 @@ function BifurcationKit.continuation(prob::BK.AbstractBifurcationProblem,
 		end
 
 		if (contParams.pMin <= polp(am) <= contParams.pMax) == false
-			@warn "Hitting boundary"
+			@warn "Hitting boundary, polp(am) = $(polp(am))"
 			break
 		end
 	end
