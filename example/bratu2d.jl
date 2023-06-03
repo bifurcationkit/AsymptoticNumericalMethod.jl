@@ -1,6 +1,6 @@
 using Revise
 using DiffEqOperators, ForwardDiff
-using BifurcationKit, LinearAlgebra, Plots, SparseArrays, Parameters, Setfield
+using BifurcationKit, LinearAlgebra, Plots, SparseArrays, Parameters, Setfield, AsymptoticNumericalMethod
 const BK = BifurcationKit
 
 # define the sup norm and a L2 norm

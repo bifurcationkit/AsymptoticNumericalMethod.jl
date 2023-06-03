@@ -50,18 +50,17 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 	nmax = contParams.maxSteps
 
 	# get parameters
-	@unpack pMin, pMax, maxSteps, newtonOptions, ds, finDiffEps = contParams
-	ϵFD = finDiffEps
+	@unpack pMin, pMax, maxSteps, newtonOptions, ds = contParams
+	ϵFD = BK.getDelta(prob)
 
-	# Converge initial guess
-	verbose && printstyled(color=:red, bold=true, "\n\n────────── ANM Method ──────────\n")
-	verbose && printstyled("*"^48, bold = true, color = :magenta)
-	verbose && printstyled("\n────────── CONVERGE INITIAL GUESS ────────────", bold = true, color = :magenta)
+	# apply Newton algo to initial guess
+	verbose && printstyled(color=:red, bold=true, ""*"─"^20*"  ANM Method  "*"─"^20*"\n")
+	verbose && printstyled("━"^18*"  INITIAL GUESS   "*"━"^18, bold = true, color = :magenta)
 	# we pass additional kwargs to newton so that it is sent to the newton callback
 	sol₀ = newton(prob, newtonOptions; normN = normC, callback = callbackN, iterationC = 0, p = p₀)
 	@assert BK.converged(sol₀) "Newton failed to converge initial guess on the branch."
-	verbose && println("\n--> convergence of initial guess = OK")
-	verbose && println("--> parameter = $(p₀), initial step")
+	verbose && (print("\n──▶ convergence of the initial guess = ");printstyled("OK\n", color=:green))
+	verbose && println("──▶ parameter = $(p₀), initial step")
 
 	# define continuation state
 	@unpack η, ds = contParams
@@ -69,7 +68,6 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
 	# variable to hold the result from continuation, i.e. a branch
 	contres = ContResult(it, states[1])
-
 	########################
 	# η = T(1)
 	# u_pred, fval, isconverged, itnewton = newton(F, dF,
@@ -85,7 +83,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 	# compute initial tangent
 	U1 = getTangent(J, dFdp, length(prob.u0), linearAlgo)
 
-	# Initialize the vector of Taylor1 expansions
+	# initialize the vector of Taylor1 expansions
 	n = length(prob.u0)
 	a = Taylor1(T, alg.order)
 	polu = Array{Taylor1{T}}(undef, n)
@@ -106,7 +104,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
 		# compute radius using that tmp contains Rk
 		am = (alg.tol / normC(tmp)) ^ (1/alg.order)
-		verbose && println("\n--> $ii, radius = $am, pmax = ", polp(am))
+		verbose && println("\n──▶ $ii, radius = $am, pmax = ", polp(am))
 
 		if isfinite(am) == false
 			println("\n\n")
@@ -132,9 +130,9 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
 		# update derivatives
 		J = BK.jacobian(prob, sol₀.u, getParams(sol₀.prob))
-		dFdp = (residual(prob, sol₀.u, setParam(prob, _p0 + finDiffEps)) .- residual(prob, sol₀.u, getParams(sol₀.prob))) ./ finDiffEps
+		dFdp = (residual(prob, sol₀.u, setParam(prob, _p0 + ϵFD)) .- residual(prob, sol₀.u, getParams(sol₀.prob))) ./ ϵFD
 
-		# dFdp .= (F(u0, set(par, lens, _p0 + finDiffEps)) .- F(u0, set(par, lens, _p0))) ./ finDiffEps
+		# dFdp .= (F(u0, set(par, lens, _p0 + ϵFD)) .- F(u0, set(par, lens, _p0))) ./ ϵFD
 
 		# compute tangent
 		U1 = getTangent(J, dFdp, length(prob.u0), linearAlgo)
@@ -153,11 +151,8 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 		end
 	end
 	verbose && println("")
-
 	save!(contres, it, states[1], resu, resp, radius)
-
 	return ANMResult(resu, resp, radius, contres)
-
 end
 
 function getTangent(J, dFdp, n, linearAlgo)
@@ -236,7 +231,7 @@ function save!(contres, it, state, resu, resp, radius)
 				if BK.detectBifucation(state)
 					status::Symbol = :guess
 					interval = BK.getinterval(BK.getpreviousp(state), getp(state))
-					printstyled(color=:red, "--> Bifurcation at p ≈ $(resp[ip](s)), δ = ", n_unstable - contres.n_unstable[end-1] ,"\n")
+					printstyled(color=:red, "──▶ Bifurcation at p ≈ $(resp[ip](s)), δ = ", n_unstable - contres.n_unstable[end-1] ,"\n")
 					@show interval
 					if it.contParams.detectBifurcation > 2
 						sbif, interval = locateBifurcation(it, Sr[is-1], contres.n_unstable[end-1], s, n_unstable, ip, resu, resp; verbose = it.verbosity == 3)
@@ -284,11 +279,11 @@ function locateBifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbose
 		end
 		stepBis > 0 && (interval = @set interval[indinterval] = resp[_ip](s))
 		verbose &&	printstyled(color=:blue,
-			"----> $(stepBis) - [Loc-Bif] (n1, nc, n2) = ",(_n1, n_unstable, _n2),
+			"────▶ $(stepBis) - [Loc-Bif] (n1, nc, n2) = ",(_n1, n_unstable, _n2),
 			", p = ", resp[_ip](s), ", s = $s, #reverse = ", n_inversion,
-			"\n----> bifurcation ∈ ", getinterval(interval...),
+			"\n────▶ bifurcation ∈ ", getinterval(interval...),
 			", precision = ", interval[2] - interval[1],
-			"\n----> 5 Eigenvalues closest to ℜ=0:\n")
+			"\n────▶ 5 Eigenvalues closest to ℜ=0:\n")
 		verbose && Base.display(BifurcationKit.closesttozero(eiginfo[1])[1:min(5, 2)])
 
 		biflocated = abs(real.(BifurcationKit.closesttozero(eiginfo[1]))[1]) < it.contParams.tolBisectionEigenvalue
@@ -303,6 +298,6 @@ function locateBifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbose
 		s += δs
 		stepBis += 1
 	end
-	verbose && printstyled(color=:red, "----> Found at p = ", resp[_ip](s), ", δn = ", abs(2n_unstable-_n1-_n2)," from p = ",resp[_ip](_s2),"\n")
+	verbose && printstyled(color=:red, "────▶ Found at p = ", resp[_ip](s), ", δn = ", abs(2n_unstable-_n1-_n2)," from p = ",resp[_ip](_s2),"\n")
 	return s, getinterval(interval...)
 end
