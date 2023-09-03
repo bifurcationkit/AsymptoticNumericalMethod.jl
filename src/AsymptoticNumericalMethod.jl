@@ -1,20 +1,20 @@
 module AsymptoticNumericalMethod
-	using Setfield, BifurcationKit, Parameters
-	using ForwardDiff, TaylorIntegration
-	using DocStringExtensions
+    using Setfield, BifurcationKit, Parameters
+    using ForwardDiff, TaylorIntegration
+    using DocStringExtensions
 
-	import BifurcationKit: getParams, setParam, residual, jacobian
-	import LinearAlgebra: dot, norm
+    import BifurcationKit: getparams, setParam, residual, jacobian
+    import LinearAlgebra: dot, norm
 
-	using RecipesBase
+    using RecipesBase
 
-	const BK = BifurcationKit
+    const BK = BifurcationKit
 
-	include("Taylor.jl")
-	include("Results.jl")
-	include("Wrap.jl")
+    include("Taylor.jl")
+    include("Results.jl")
+    include("Wrap.jl")
 
-	include("plotting/Recipes.jl")
+    include("plotting/Recipes.jl")
 
-	export ANM, continuation
+    export ANM, continuation
 end # module
