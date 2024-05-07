@@ -1,6 +1,6 @@
 using Revise
 using DiffEqOperators, ForwardDiff
-using BifurcationKit, LinearAlgebra, Plots, SparseArrays, Parameters, Setfield, AsymptoticNumericalMethod
+using BifurcationKit, Plots, SparseArrays, Parameters, AsymptoticNumericalMethod
 const BK = BifurcationKit
 
 # define the sup norm and a L2 norm
@@ -70,7 +70,7 @@ prob = BifurcationProblem(Fmit, sol0, par_mit, (@lens _.λ),; J = JFmit,
 eigls = EigKrylovKit(dim = 70)
 
 # options for Newton solver, we pass the eigensolverr
-opt_newton = BK.NewtonPar(tol = 1e-8, verbose = false, eigsolver = eigls, max_iterations = 20)
+opt_newton = NewtonPar(tol = 1e-8, eigsolver = eigls, max_iterations = 20)
 
 # options for continuation
 opts_br = ContinuationPar(p_max = 3.5, p_min = 0.025,
@@ -92,7 +92,7 @@ br = continuation(prob, PALC(), opts_br; kwargsC...)
 show(br)
 
 #################################################################################
-optanm = ContinuationPar(opts_br, ds= 0.01, detect_bifurcation = 3, n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
+optanm = ContinuationPar(opts_br, ds= 0.01, n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
 
 branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 3)
 

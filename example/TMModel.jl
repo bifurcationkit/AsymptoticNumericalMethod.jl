@@ -1,6 +1,5 @@
 using Revise
-using AsymptoticNumericalMethod, Plots, Parameters, Setfield
-using LinearAlgebra: norm
+using AsymptoticNumericalMethod, Plots, Parameters
 using BifurcationKit
 const BK = BifurcationKit
 
@@ -20,13 +19,11 @@ z0 = [0.238616, 0.982747, 0.367876 ]
 prob = BK.BifurcationProblem(TMvf!, z0, par_tm, (@lens _.E0); record_from_solution = (x, p) -> (E = x[1], x = x[2], u = x[3]),)
 
 opts_br = ContinuationPar(p_min = -10.0, p_max = -0.9, ds = 0.04, dsmax = 0.125, n_inversion = 8, detect_bifurcation = 3, max_bisection_steps = 25, nev = 3)
-opts_br = @set opts_br.newton_options.verbose = false
-br0 = continuation(prob, PALC(tangent=Bordered()), opts_br;
-plot = true, normC = norminf)
+br0 = continuation(prob, PALC(tangent=Bordered()), opts_br, normC = norminf)
 
 plot(br0)
 #################################################################################
-optanm = ContinuationPar(opts_br, ds= 0.01, newton_options = NewtonPar(tol = 1e-9, verbose = false), detect_bifurcation = 3, n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
+optanm = ContinuationPar(opts_br, ds= 0.01, newton_options = NewtonPar(tol = 1e-9, verbose = false), n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
 
 branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 2)
 

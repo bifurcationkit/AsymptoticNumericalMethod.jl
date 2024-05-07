@@ -1,5 +1,5 @@
 using Revise
-using AsymptoticNumericalMethod, Plots, Parameters, Setfield
+using AsymptoticNumericalMethod, Plots, Parameters
 using LinearAlgebra: norm
 using BifurcationKit
 const BK = BifurcationKit
@@ -44,4 +44,4 @@ plot()
     title!("")
 #################################################################################
 # WIP !!! does not work yet
-branm1 = continuation(branm, 2)
+# branm1 = continuation(branm, 2)

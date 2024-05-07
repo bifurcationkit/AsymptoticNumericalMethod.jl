@@ -1,5 +1,5 @@
 using Revise
-using AsymptoticNumericalMethod, LinearAlgebra, Plots, Parameters, Setfield
+using AsymptoticNumericalMethod, Plots, Parameters
 using BifurcationKit
 const BK = BifurcationKit
 
@@ -30,10 +30,9 @@ optcont0 = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.01, p_max = 4.1, ne
 br0 = @time continuation(prob, PALC(tangent = Bordered()), optcont0)
 
 plot(br0)
-
 #################################################################################
-optcont = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9))
+optcont = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds = 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9))
 
-branm = continuation(prob, ANM(15, 1e-4), optcont, normC = x->norm(x,Inf))
+branm = continuation(prob, ANM(15, 1e-4), optcont, normC = norminf)
 
 plot(branm, plotseries = true)
