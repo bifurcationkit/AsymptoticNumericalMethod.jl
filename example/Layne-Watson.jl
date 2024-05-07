@@ -17,9 +17,9 @@ end
 sol0 = zeros(10)
 par = (λ = 0.0, )
 prob = BifurcationProblem(LW, sol0, par, (@lens _.λ);
-    record_from_solution = (x,p) -> (xN = x[end], x1 = x[1], s = sum(x), xinf = norminf(x)))
+    record_from_solution = (x,p) -> (xₙ = x[end], x₁ = x[1], s = sum(x), xinf = norminf(x)))
 
-optcont = ContinuationPar(dsmin = 0.001, dsmax = 0.05, ds= 0.01, newton_options = NewtonPar(tol = 1e-11, max_iterations = 10), max_steps = 1550, detect_bifurcation = 0, p_max = 2.)
+optcont = ContinuationPar(dsmin = 0.0001, dsmax = 0.05, ds= 0.01, newton_options = NewtonPar(tol = 1e-11, max_iterations = 4, verbose = false), max_steps = 1500, detect_bifurcation = 0, p_max = 1., p_min = 0., detect_fold=false)
 
 alg = PALC(tangent = Bordered())
 alg = MoorePenrose()
@@ -46,9 +46,10 @@ brdc = continuation(prob,
 
 plot(brdc)
 #################################################################################
-optanm = ContinuationPar(optcont, max_steps = 1700, detect_bifurcation = 0)
+optanm = ContinuationPar(optcont, max_steps = 1700, detect_bifurcation = 3)
 @set! optanm.newton_options.max_iterations = 10
+@set! optanm.newton_options.verbose = true
 
-branm = @time continuation(prob, ANM(3, 1e-5), optanm, normC = norm, verbosity = 1)
+branm = @time continuation(prob, ANM(17, 1e-7), optanm, normC = norminf, verbosity = 1)
 
-plot(branm; vars=(:param, :xN), plotseries = true)
+plot(branm; vars=(:param, :xₙ), plotseries = false)

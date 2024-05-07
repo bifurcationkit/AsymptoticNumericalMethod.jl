@@ -28,4 +28,4 @@ If you use this package for your work, we ask that you cite the following paper.
 
 To install it, please run
 
-`] add https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl`
+`] add AsymptoticNumericalMethod`
