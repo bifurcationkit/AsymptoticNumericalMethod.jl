@@ -1,7 +1,7 @@
 name = "AsymptoticNumericalMethod"
 uuid = "49cd1f3c-f820-4280-87fa-ee13bfe9a539"
 authors = ["Romain Veltz <romain.veltz@inria.fr>"]
-version = "0.4.0"
+version = "0.3.0"
 
 [deps]
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
@@ -13,7 +13,7 @@ RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 TaylorIntegration = "92b13dbe-c966-51a2-8445-caca9f8a7d42"
 
 [compat]
-BifurcationKit = "0.4"
+BifurcationKit = "^0.4.0"
 DocStringExtensions = "0.8.2, 0.8.3, 0.9"
 ForwardDiff = "^0.10"
 Parameters = "0.12.3"
