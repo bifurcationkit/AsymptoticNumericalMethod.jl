@@ -1,5 +1,5 @@
 module AsymptoticNumericalMethod
-    using Setfield, BifurcationKit, Parameters
+    using BifurcationKit, Parameters
     using ForwardDiff, TaylorIntegration
     using DocStringExtensions
 

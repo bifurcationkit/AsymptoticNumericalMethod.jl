@@ -1,10 +1,10 @@
 using Revise
-using AsymptoticNumericalMethod, LinearAlgebra, Plots, Parameters
+using AsymptoticNumericalMethod, LinearAlgebra, Plots
 using BifurcationKit
 const BK = BifurcationKit
 
 function F_chan(x, p)
-    @unpack α = p
+    (;α) = p
     N = length(x)
     h = 1/(N)
     f = similar(x)
@@ -23,10 +23,10 @@ sol = zeros(n)
 par = (α = 0.0, )
 optnewton = NewtonPar(tol = 1e-11, verbose = true)
 
-prob = BifurcationProblem(F_chan, sol, par, (@lens _.α); record_from_solution = (x,p) -> norminf(x))
+prob = BifurcationProblem(F_chan, sol, par, (@optic _.α); record_from_solution = (x,p) -> norminf(x))
 
 optcont0 = ContinuationPar(dsmin = 0.01, dsmax = 0.05, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9), max_steps = 550)
-br0 = @time continuation(prob, PALC(),optcont0, record_from_solution = (x,p) -> norminf(x), normC = norminf, verbosity = 0)
+br0 = @time continuation(prob, PALC(),optcont0, normC = norminf, verbosity = 0)
 plot(br0)
 
 #################################################################################

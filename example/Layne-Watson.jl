@@ -1,11 +1,11 @@
 using Revise
-using AsymptoticNumericalMethod, Plots, Parameters
+using AsymptoticNumericalMethod, Plots
 using LinearAlgebra: norm
 using BifurcationKit
 const BK = BifurcationKit
 
 function LW(x, p)
-    @unpack λ = p
+    (;λ) = p
     f = similar(x)
     s = sum(x)
     for i in eachindex(f)
@@ -16,7 +16,7 @@ end
 
 sol0 = zeros(10)
 par = (λ = 0.0, )
-prob = BifurcationProblem(LW, sol0, par, (@lens _.λ);
+prob = BifurcationProblem(LW, sol0, par, (@optic _.λ);
     record_from_solution = (x,p) -> (xₙ = x[end], x₁ = x[1], s = sum(x), xinf = norminf(x)))
 
 optcont = ContinuationPar(dsmin = 0.0001, dsmax = 0.05, ds= 0.01, newton_options = NewtonPar(tol = 1e-11, max_iterations = 4, verbose = false), max_steps = 1500, detect_bifurcation = 0, p_max = 1., p_min = 0., detect_fold=false)
@@ -46,9 +46,9 @@ brdc = continuation(prob,
 
 plot(brdc)
 #################################################################################
-optanm = ContinuationPar(optcont, max_steps = 1700, detect_bifurcation = 3)
-@set! optanm.newton_options.max_iterations = 10
-@set! optanm.newton_options.verbose = true
+optanm = ContinuationPar(optcont, max_steps = 1700, detect_bifurcation = 0)
+@reset optanm.newton_options.max_iterations = 10
+@reset optanm.newton_options.verbose = true
 
 branm = @time continuation(prob, ANM(17, 1e-7), optanm, normC = norminf, verbosity = 1)
 

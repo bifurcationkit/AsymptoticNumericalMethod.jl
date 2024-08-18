@@ -1,12 +1,12 @@
 using Revise
-using AsymptoticNumericalMethod, Plots, Parameters
+using AsymptoticNumericalMethod, Plots
 using BifurcationKit
 const BK = BifurcationKit
 
 Nl(x; a = 0.5, b = 0.01) = 1 + (x + a*x^2)/(1 + b*x^2)
 
 function F_chan(x, p)
-    @unpack α, β = p
+    (;α, β) = p
     f = similar(x)
     n = length(x)
     f[1] = x[1] - β
@@ -24,7 +24,7 @@ sol = [(i-1)*(n-i)/n^2+0.1 for i=1:n]
 par = (α = 3.3, β = 0.01)
 optnewton = NewtonPar(tol = 1e-11, verbose = true)
 
-prob = BifurcationProblem(F_chan, sol, par, (@lens _.α))
+prob = BifurcationProblem(F_chan, sol, par, (@optic _.α))
 
 optcont0 = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9))
 br0 = @time continuation(prob, PALC(tangent = Bordered()), optcont0)
