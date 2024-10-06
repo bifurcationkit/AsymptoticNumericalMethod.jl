@@ -16,7 +16,7 @@ end
 
 sol0 = zeros(2)
 par = (α = 0.0, )
-prob = BifurcationProblem(F, sol0, par, (@optic _.α); record_from_solution = (x,p) -> norminf(x))
+prob = BifurcationProblem(F, sol0, par, (@optic _.α); record_from_solution = (x,p;k...) -> norminf(x))
 
 optcont = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.1, newton_options = NewtonPar(tol = 1e-11), max_steps = 100, detect_bifurcation = 3)
 br0 = @time continuation(prob, PALC(), optcont, normC = norminf)

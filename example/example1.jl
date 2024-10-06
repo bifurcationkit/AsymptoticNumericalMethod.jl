@@ -23,7 +23,7 @@ sol = zeros(n)
 par = (α = 0.0, )
 optnewton = NewtonPar(tol = 1e-11, verbose = true)
 
-prob = BifurcationProblem(F_chan, sol, par, (@optic _.α); record_from_solution = (x,p) -> norminf(x))
+prob = BifurcationProblem(F_chan, sol, par, (@optic _.α); record_from_solution = (x,p;k...) -> norminf(x))
 
 optcont0 = ContinuationPar(dsmin = 0.01, dsmax = 0.05, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9), max_steps = 550)
 br0 = @time continuation(prob, PALC(),optcont0, normC = norminf, verbosity = 0)

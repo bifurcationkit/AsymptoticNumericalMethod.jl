@@ -16,7 +16,7 @@ end
 
 par_tm = (α = 1.5, τ = 0.013, J = 3.07, E0 = -2.0, τD = 0.200, U0 = 0.3, τF = 1.5, τS = 0.007) #2.87
 z0 = [0.238616, 0.982747, 0.367876 ]
-prob = BK.BifurcationProblem(TMvf!, z0, par_tm, (@optic _.E0); record_from_solution = (x, p) -> (E = x[1], x = x[2], u = x[3]),)
+prob = BK.BifurcationProblem(TMvf!, z0, par_tm, (@optic _.E0); record_from_solution = (x, p;k...) -> (E = x[1], x = x[2], u = x[3]),)
 
 opts_br = ContinuationPar(p_min = -10.0, p_max = -0.9, ds = 0.04, dsmax = 0.125, n_inversion = 8, detect_bifurcation = 3, max_bisection_steps = 25, nev = 3)
 br0 = continuation(prob, PALC(tangent=Bordered()), opts_br, normC = norminf)
