@@ -56,7 +56,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
     verbose && printstyled(color=:red, bold=true, ""*"─"^20*"  ANM Method  "*"─"^20*"\n")
     verbose && printstyled("━"^18*"  INITIAL GUESS   "*"━"^18, bold = true, color = :magenta)
     # we pass additional kwargs to newton so that it is sent to the newton callback
-    sol₀ = newton(prob, newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = p₀)
+    sol₀ = solve(prob, Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = p₀)
     @assert BK.converged(sol₀) "Newton failed to converge initial guess on the branch."
     verbose && (print("\n──▶ convergence of the initial guess = ");printstyled("OK\n", color=:green))
     verbose && println("──▶ parameter = $(p₀), initial step")
@@ -119,7 +119,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
         # correct solution if needed
         verbose && printstyled("─"^70, bold = true)
-        sol₀ = newton(re_make(prob, u0 = _x0, params = BK.setparam(prob, _p0)), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = _p0)
+        sol₀ = solve(re_make(prob, u0 = _x0, params = BK.setparam(prob, _p0)), Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = _p0)
 
         if BK.converged(sol₀) == false
             println("\n\n")

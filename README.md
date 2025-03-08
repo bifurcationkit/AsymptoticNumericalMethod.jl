@@ -6,7 +6,13 @@
 
 This Julia package provides the numerical continuation algorithm **Asymptotic Numerical Method** (ANM) which is to be used with [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
 
-## Support and citation
+## 📦 Installation
+
+To install it, please run
+
+`] add AsymptoticNumericalMethod`
+
+## 📚 Support and citation
 If you use this package for your work, we ask that you cite the following paper. Open source development as part of academic research strongly depends on this. Please also consider starring this repository if you like our work, this will help us to secure funding in the future. It is referenced on HAL-Inria as follows:
 
 ```
@@ -23,9 +29,3 @@ If you use this package for your work, we ask that you cite the following paper.
   HAL_VERSION = {v1},
 }
 ```
-
-## Installation
-
-To install it, please run
-
-`] add AsymptoticNumericalMethod`
