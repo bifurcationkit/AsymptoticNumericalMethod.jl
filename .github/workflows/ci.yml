@@ -1,9 +1,11 @@
 name: CI
 on:
-  push:
-    branches: [master]
-    tags: [v*]
   pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
   test:
@@ -22,11 +24,11 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v1
+      - uses: actions/cache@v3
         env:
           cache-name: cache-artifacts
         with:
@@ -42,3 +44,25 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1'
+      - run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()'
+      - run: |
+          # julia --project=docs -e '
+          #   using Documenter: doctest
+          #   using HclinicBifurcationKit
+          #   doctest(HclinicBifurcationKit)' # change MYPACKAGE to the name of your package
+      - run: julia --project=docs docs/make.jl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
