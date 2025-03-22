@@ -3,7 +3,7 @@ module AsymptoticNumericalMethod
     using ForwardDiff, TaylorIntegration
     using DocStringExtensions
 
-    import BifurcationKit: getparams, setParam, residual, jacobian
+    import BifurcationKit: getparams, setparam, residual, jacobian
     import LinearAlgebra: dot, norm
 
     using RecipesBase
