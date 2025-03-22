@@ -23,6 +23,7 @@ br0 = @time continuation(prob, PALC(), optcont, normC = norminf)
 
 plot(br0)
 #################################################################################
+get_normal_form(br0, 2)
 br1 = continuation(br0, 2)
 plot(br0,br1)
 #################################################################################
@@ -34,14 +35,16 @@ plot(branm)
 plot(branm, plotseries = true)
 
 plot!(br0, color = :black)
+
+get_normal_form(branm, 2)
 ################
 # plot the norm of the series
 plot()
-    for ii in eachindex(branm.polU)
-        s = LinRange(-0*branm.radius[ii], branm.radius[ii], 20)
-        plot!([branm.polp[ii].(s)], [norminf(F(branm.polU[ii](_s), BK.setparam(prob,branm.polp[ii](_s)))) for _s in s], legend = false, linewidth=5)#, marker=:d)
-    end
-    title!("")
+for ii in eachindex(branm.polU)
+    s = LinRange(-0*branm.radius[ii], branm.radius[ii], 20)
+    plot!([branm.polp[ii].(s)], [norminf(F(branm.polU[ii](_s), BK.setparam(prob,branm.polp[ii](_s)))) for _s in s], legend = false, linewidth=5)#, marker=:d)
+end
+title!("")
 #################################################################################
 # WIP !!! does not work yet
 # branm1 = continuation(branm, 2)

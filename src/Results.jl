@@ -14,7 +14,7 @@ struct ANMResult{Tkind, Tprob, U, P, T, B <: BK.AbstractResult{Tkind, Tprob}} <:
     polp::P
     "Radius of validity for each Taylor series"
     radius::Vector{T}
-    "Corresponnding `::ContResult`"
+    "Corresponding `::ContResult`"
     branch::B
 end
 

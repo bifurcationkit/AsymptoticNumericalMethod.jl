@@ -1,5 +1,5 @@
 module AsymptoticNumericalMethod
-    using BifurcationKit, Parameters
+    import BifurcationKit as BK
     using ForwardDiff, TaylorIntegration
     using DocStringExtensions
 
@@ -8,13 +8,11 @@ module AsymptoticNumericalMethod
 
     using RecipesBase
 
-    const BK = BifurcationKit
-
     include("Taylor.jl")
     include("Results.jl")
     include("Wrap.jl")
 
     include("plotting/Recipes.jl")
 
-    export ANM, continuation
+    export ANM, continuation, ANMResult
 end # module

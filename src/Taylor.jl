@@ -16,7 +16,7 @@ $(TYPEDFIELDS)
 struct ANM{T} <: BK.AbstractContinuationAlgorithm
     "order of the polynomial approximation"
     order::Int
-    "tolerance which is used to estimate the neighbourhood on which the polynomial approximation is valid"
+    "tolerance which is used to estimate the neighborhood on which the polynomial approximation is valid"
     tol::T
 end
 
@@ -26,22 +26,23 @@ $(SIGNATURES)
 # Arguments
 
 - `prob::BifurcationProblem`
+
 - `alg::` ANM continuation algorithm. See [`ANM`](@ref).
 - `contParams` see [`BK.ContinuationPar`](@ref)
 """
 function BK.continuation(prob::BK.AbstractBifurcationProblem,
                 alg::ANM,
                 contParams::BK.ContinuationPar{T, L, E};
-                linear_algo = MatrixBLS(),
+                linear_algo = BK.MatrixBLS(),
                 plot = false,
                 normC = norm,
                 finalise_solution = BK.finalise_default,
-                callback_newton = BifurcationKit.cb_default,
+                callback_newton = BK.cb_default,
                 kind = BK.EquilibriumCont(),
                 verbosity = 0,
                 kwargs...) where {T, L <: BK.AbstractLinearSolver, E <: BK.AbstractEigenSolver}
 
-    it = BK.ContIterable(prob, alg, contParams; finalise_solution = finalise_solution, callback_newton = callback_newton, normC = normC, verbosity = verbosity, plot = plot)
+    it = BK.ContIterable(prob, alg, contParams; finalise_solution, callback_newton, normC, verbosity, plot)
 
     # the keyword argument is to overwrite verbosity behaviour, like when locating bifurcations
     verbose = verbosity > 0
@@ -49,24 +50,24 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
     nmax = contParams.max_steps
 
     # get parameters
-    @unpack p_min, p_max, max_steps, newton_options, ds = contParams
+    (;p_min, p_max, max_steps, newton_options, ds) = contParams
     ϵFD = BK.getdelta(prob)
 
     # apply Newton algo to initial guess
     verbose && printstyled(color=:red, bold=true, ""*"─"^20*"  ANM Method  "*"─"^20*"\n")
     verbose && printstyled("━"^18*"  INITIAL GUESS   "*"━"^18, bold = true, color = :magenta)
     # we pass additional kwargs to newton so that it is sent to the newton callback
-    sol₀ = solve(prob, Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = p₀)
+    sol₀ = BK.solve(prob, BK.Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = p₀)
     @assert BK.converged(sol₀) "Newton failed to converge initial guess on the branch."
     verbose && (print("\n──▶ convergence of the initial guess = ");printstyled("OK\n", color=:green))
     verbose && println("──▶ parameter = $(p₀), initial step")
 
     # define continuation state
-    @unpack η, ds = contParams
+    (;η, ds) = contParams
     states = BK.iterate_from_two_points(it, sol₀.u, p₀, copy(sol₀.u), p₀ + ds / η; _verbosity = verbosity)
 
     # variable to hold the result from continuation, i.e. a branch
-    contres = ContResult(it, states[1])
+    contres = BK.ContResult(it, states[1])
     ########################
     # η = T(1)
     # u_pred, fval, isconverged, itnewton = newton(F, dF,
@@ -77,10 +78,11 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
     ########################
     # compute jacobian and derivatives
     J = BK.jacobian(prob, sol₀.u, getparams(prob))
-    dFdp = (residual(prob, sol₀.u, BK.setparam(prob, p₀ + ϵFD)) .- residual(prob, sol₀.u, getparams(prob))) ./ ϵFD
+    dFdp = (BK.residual(prob, sol₀.u, BK.setparam(prob, p₀ + ϵFD)) .- 
+            BK.residual(prob, sol₀.u, getparams(prob))) ./ ϵFD
 
     # compute initial tangent
-    U1 = getTangent(J, dFdp, length(prob.u0), linear_algo)
+    U1 = _get_tangent(J, dFdp, length(prob.u0), linear_algo)
 
     # initialize the vector of Taylor1 expansions
     n = length(prob.u0)
@@ -119,7 +121,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
         # correct solution if needed
         verbose && printstyled("─"^70, bold = true)
-        sol₀ = solve(re_make(prob, u0 = _x0, params = BK.setparam(prob, _p0)), Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = _p0)
+        sol₀ = BK.solve(BK.re_make(prob, u0 = _x0, params = BK.setparam(prob, _p0)), BK.Newton(), newton_options; normN = normC, callback = callback_newton, iterationC = 0, p = _p0)
 
         if BK.converged(sol₀) == false
             println("\n\n")
@@ -129,12 +131,13 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
         # update derivatives
         J = BK.jacobian(prob, sol₀.u, getparams(sol₀.prob))
-        dFdp = (residual(prob, sol₀.u, BK.setparam(prob, _p0 + ϵFD)) .- residual(prob, sol₀.u, getparams(sol₀.prob))) ./ ϵFD
+        dFdp = (BK.residual(prob, sol₀.u, BK.setparam(prob, _p0 + ϵFD)) .-
+                BK.residual(prob, sol₀.u, getparams(sol₀.prob))) ./ ϵFD
 
         # dFdp .= (F(u0, set(par, lens, _p0 + ϵFD)) .- F(u0, set(par, lens, _p0))) ./ ϵFD
 
         # compute tangent
-        U1 = getTangent(J, dFdp, length(prob.u0), linear_algo)
+        U1 = _get_tangent(J, dFdp, length(prob.u0), linear_algo)
 
         # update series with new values
         polp .*= 0; polu .*= 0
@@ -150,18 +153,18 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
         end
     end
     verbose && println("")
-    save!(contres, it, states[1], resu, resp, radius)
+    _save!(contres, it, states[1], resu, resp, radius)
     return ANMResult(resu, resp, radius, contres)
 end
 
-function getTangent(J, dFdp, n, linear_algo)
+function _get_tangent(J, dFdp, n, linear_algo)
     T = eltype(dFdp)
     u1, p1, iscv, itlin = linear_algo(J, dFdp,
                 rand(n), rand(),
                 zeros(n), T(1))
     ~iscv && @error "Initial tangent computation failed"
     nrm =  √(dot(u1,u1) + p1^2)
-    U1 = BorderedArray(u1./nrm, p1/nrm)
+    U1 = BK.BorderedArray(u1./nrm, p1/nrm)
 end
 
 function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo) where T
@@ -185,13 +188,19 @@ end
 
 function BK.initialize!(state::BK.AbstractContinuationState,
                         iter::BK.AbstractContinuationIterable,
-                        alg::ANM, nrm = false)
+                        alg::ANM, 
+                        nrm = false)
     return nothing
 end
 
-function _contresult(prob, alg, contParams::ContinuationPar, τ; recordFromSolution, get_eigen_elements )
+function _contresult(prob,
+                    alg,
+                    contParams::BK.ContinuationPar,
+                    τ; 
+                    recordFromSolution, 
+                    get_eigen_elements )
     x0 = prob.u0
-    par0 = getparams(prob)
+    par0 = BK.getparams(prob)
     pt = recordFromSolution(x0, 0.)
     pts = BK.mergefromuser(pt, (param = 0.0, am = 0.0, ip = 1, itnewton = 0, ds = 0., step = 0, n_imag = 0, n_unstable = 0, stable = false))
 
@@ -205,7 +214,7 @@ function _contresult(prob, alg, contParams::ContinuationPar, τ; recordFromSolut
     end
 end
 
-function save!(contres, it, state, resu, resp, radius)
+function _save!(contres, it, state, resu, resp, radius)
     state.converged = true
     state.step = 0
     state.itnewton = 0
@@ -226,10 +235,10 @@ function save!(contres, it, state, resu, resp, radius)
             BK.save!(contres, it, state)
 
             if it.contparams.detect_bifurcation > 1
-                _isstable, n_unstable, n_imag = BifurcationKit.is_stable(it.contparams, state.eigvals)
+                _isstable, n_unstable, n_imag = BK.is_stable(it.contparams, state.eigvals)
                 if BK.detect_bifurcation(state)
                     status::Symbol = :guess
-                    interval = BK.getinterval(BK.getpreviousp(state), getp(state))
+                    interval = BK.getinterval(BK.getpreviousp(state), BK.getp(state))
                     printstyled(color=:red, "──▶ Bifurcation at p ≈ $(resp[ip](s)), δ = ", n_unstable - contres.n_unstable[end-1] ,"\n")
                     @debug interval
                     if it.contparams.detect_bifurcation > 2
@@ -259,16 +268,16 @@ function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbos
 
     # we compute the number of changes in n_unstable
     n_inversion = 0
-    stepBis = 0
+    step_bis = 0
     local s = (_s2 + _s1)/2
     δs = (_s2 - _s1)/2
     n_pred = _n1
     n_unstable = _n1
 
     biflocated = true
-    while stepBis < contparams.max_bisection_steps
+    while step_bis < contparams.max_bisection_steps
         eiginfo = get_eigen_elements(resu, resp, it.prob, s, _ip, it)
-        isstable, n_unstable, n_imag = BifurcationKit.is_stable(contparams, eiginfo[1])
+        isstable, n_unstable, n_imag = BK.is_stable(contparams, eiginfo[1])
         if n_pred == n_unstable
             δs /= 2
         else
@@ -276,26 +285,26 @@ function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbos
             n_inversion += 1
             indinterval = (indinterval == 2) ? 1 : 2
         end
-        stepBis > 0 && (interval = @set interval[indinterval] = resp[_ip](s))
+        step_bis > 0 && (interval = BK.@set interval[indinterval] = resp[_ip](s))
         verbose &&    printstyled(color=:blue,
-            "────▶ $(stepBis) - [Loc-Bif] (n1, nc, n2) = ",(_n1, n_unstable, _n2),
+            "────▶ $(step_bis) - [Loc-Bif] (n1, nc, n2) = ",(_n1, n_unstable, _n2),
             ", p = ", resp[_ip](s), ", s = $s, #reverse = ", n_inversion,
             "\n────▶ bifurcation ∈ ", getinterval(interval...),
             ", precision = ", interval[2] - interval[1],
             "\n────▶ 5 Eigenvalues closest to ℜ=0:\n")
-        verbose && Base.display(BifurcationKit.closesttozero(eiginfo[1])[1:min(5, 2)])
+        verbose && Base.display(BK.closesttozero(eiginfo[1])[1:min(5, 2)])
 
-        biflocated = abs(real.(BifurcationKit.closesttozero(eiginfo[1]))[1]) < it.contparams.tol_bisection_eigenvalue
+        biflocated = abs(real.(BK.closesttozero(eiginfo[1]))[1]) < it.contparams.tol_bisection_eigenvalue
 
         if (abs(s) >= contparams.dsmin_bisection &&
-                stepBis < contparams.max_bisection_steps &&
+                step_bis < contparams.max_bisection_steps &&
                 n_inversion < contparams.n_inversion &&
                 biflocated == false) == false
             break
         end
         n_pred = n_unstable
         s += δs
-        stepBis += 1
+        step_bis += 1
     end
     verbose && printstyled(color=:red, "────▶ Found at p = ", resp[_ip](s), ", δn = ", abs(2n_unstable-_n1-_n2)," from p = ",resp[_ip](_s2),"\n")
     return s, getinterval(interval...)
