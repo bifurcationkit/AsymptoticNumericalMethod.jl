@@ -2,7 +2,7 @@
 
 | **Documentation** | **Build Status** | **Coverage** | **Version** |
 | :-: | :-: | :-: | :-: |
-| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev) | [![Build status](https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl/workflows/CI/badge.svg)](https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl/actions) | [![codecov](https://codecov.io/gh/bifurcationkit/AsymptoticNumericalMethod.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/bifurcationkit/AsymptoticNumericalMethod.jl) | [![ver-img]][ver-url] |
+| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/ANM/) | [![Build status](https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl/workflows/CI/badge.svg)](https://github.com/bifurcationkit/AsymptoticNumericalMethod.jl/actions) | [![codecov](https://codecov.io/gh/bifurcationkit/AsymptoticNumericalMethod.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/bifurcationkit/AsymptoticNumericalMethod.jl) | [![ver-img]][ver-url] |
 
 [ver-img]: https://juliahub.com/docs/AsymptoticNumericalMethod/version.svg
 [ver-url]: https://juliahub.com/ui/Packages/BifurcationKit/UDEDl
