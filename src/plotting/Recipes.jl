@@ -24,7 +24,7 @@ RecipesBase.@recipe function Plots(br::ANMResult;
                 linewidth --> 5
                 markerstrokewidth --> 0
                 map(applytoX, [br.polp[ii].(s)]), map(applytoY, [getproperty(
-                BK.namedprintsol(record_from_solution(br.polU[ii](_s), BK.setparam(prob, br.polp[ii].(s)))), ind2) for _s in s])
+                BK._namedrecordfromsol(record_from_solution(br.polU[ii](_s), BK.setparam(prob, br.polp[ii].(s)))), ind2) for _s in s])
             end
         end
     end
