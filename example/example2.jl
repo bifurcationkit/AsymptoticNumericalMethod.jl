@@ -23,9 +23,9 @@ br0 = @time continuation(prob, PALC(), optcont, normC = norminf)
 
 plot(br0)
 #################################################################################
-get_normal_form(br0, 2)
-br1 = continuation(br0, 2)
-plot(br0,br1)
+get_normal_form(br0, 2; autodiff = false)
+br1 = continuation(br0, 2; autodiff = false)
+plot(br0, br1)
 #################################################################################
 optanm = ContinuationPar(optcont, ds= 0.01, newton_options = NewtonPar(tol = 1e-9, verbose = false), detect_bifurcation = 3, n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
 
@@ -36,7 +36,7 @@ plot(branm, plotseries = true)
 
 plot!(br0, color = :black)
 
-get_normal_form(branm, 2)
+# get_normal_form(branm, 2; autodiff = false)
 ################
 # plot the norm of the series
 plot()

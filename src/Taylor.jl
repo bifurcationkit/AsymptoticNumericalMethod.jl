@@ -168,7 +168,7 @@ function _get_tangent(J, dFdp, n, linear_algo)
 end
 
 function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo) where T
-    order = polp.order
+    order = get_order(polp)
     for ord in 2:order
         R = residual(prob, polU, BK.setparam(prob, polp))
         # put Rk in tmp
