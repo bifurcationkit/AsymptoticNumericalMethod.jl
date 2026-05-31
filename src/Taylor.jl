@@ -161,14 +161,14 @@ function _get_tangent(J, dFdp, n, linear_algo)
     T = eltype(dFdp)
     u1, p1, iscv, itlin = linear_algo(J, dFdp,
                 rand(n), rand(),
-                zeros(n), T(1))
+                zeros(n), one(T))
     ~iscv && @error "Initial tangent computation failed"
     nrm =  √(dot(u1,u1) + p1^2)
     U1 = BK.BorderedArray(u1./nrm, p1/nrm)
 end
 
 function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo) where T
-    order = get_order(polp)
+    order = TS.order(polp)
     for ord in 2:order
         R = residual(prob, polU, BK.setparam(prob, polp))
         # put Rk in tmp
@@ -177,7 +177,7 @@ function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo
         end
         Uk, λk, iscv, itlin = linear_algo(J, dFdp,
                     U1.u, U1.p,
-                    -tmp, T(0))
+                    -tmp, zero(T))
         ~iscv && @warn "Bordered Linear solver did not converge"
         polp[ord] = λk
         for ii in eachindex(tmp)
