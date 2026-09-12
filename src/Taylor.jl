@@ -13,12 +13,17 @@ $(TYPEDFIELDS)
 
 - Rubbert, Lennart, Isabelle Charpentier, Simon Henein, and Pierre Renaud. “Higher-Order Continuation Method for the Rigid-Body Kinematic Design of Compliant Mechanisms”, n.d., 18.
 """
-struct ANM{T} <: BK.AbstractContinuationAlgorithm
+Base.@kwdef struct ANM{T1, T2} <: BK.AbstractContinuationAlgorithm
     "order of the polynomial approximation"
     order::Int
     "tolerance which is used to estimate the neighborhood on which the polynomial approximation is valid"
-    tol::T
+    tol::T1
+    "Bordered linear algorithm."
+    bls::T2 = BK.MatrixBLS()
 end
+
+ANM(order, tol) = ANM(; order, tol)
+BK.get_bordered_linsolver(anm::ANM) = anm.bls
 
 """
 $(SIGNATURES)
@@ -31,27 +36,27 @@ $(SIGNATURES)
 - `contParams` see [`BK.ContinuationPar`](@ref)
 """
 function BK.continuation(prob::BK.AbstractBifurcationProblem,
-                alg::ANM,
-                contParams::BK.ContinuationPar{T, L, E};
-                linear_algo = BK.MatrixBLS(),
-                plot = false,
-                normC = norm,
-                finalise_solution = BK.finalise_default,
-                callback_newton = BK.cb_default,
-                kind = BK.EquilibriumCont(),
-                verbosity = 0,
-                kwargs...) where {T, L <: BK.AbstractLinearSolver, E <: BK.AbstractEigenSolver}
+                        alg::ANM,
+                        contParams::BK.ContinuationPar{T, L, E};
+                        linear_algo = BK.MatrixBLS(),
+                        plot = false,
+                        normC = norm,
+                        finalise_solution = BK.finalise_default,
+                        callback_newton = BK.cb_default,
+                        kind = BK.EquilibriumCont(),
+                        verbosity = 0,
+                        kwargs...) where {T, L <: BK.AbstractLinearSolver, E <: BK.AbstractEigenSolver}
 
-    it = BK.ContIterable(prob, alg, contParams; finalise_solution, callback_newton, normC, verbosity, plot)
+    it = BK.ContIterable(prob, alg, contParams; finalise_solution, callback_newton, normC, verbosity, plot, kind)
+
+    BK.@reset alg.bls = linear_algo
 
     # the keyword argument is to overwrite verbosity behaviour, like when locating bifurcations
     verbose = verbosity > 0
     p₀ = BK.getparam(prob)
-    nmax = contParams.max_steps
 
     # get parameters
-    (;p_min, p_max, max_steps, newton_options, ds) = contParams
-    ϵFD = BK.getdelta(prob)
+    (; newton_options, ds) = contParams
 
     # apply Newton algo to initial guess
     verbose && printstyled(color=:red, bold=true, ""*"─"^20*"  ANM Method  "*"─"^20*"\n")
@@ -68,6 +73,18 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
     # variable to hold the result from continuation, i.e. a branch
     contres = BK.ContResult(it, states[1])
+
+    return _continuation!(it, states[1], contres)
+end
+
+function _continuation!(it::BK.ContIterable{Tk,Tp,Ta,T}, state, contres) where {Tk,Tp,Ta,T}
+    prob = BK.getprob(it)
+    anm = BK.getalg(it)
+    linear_algo = anm.bls
+    (; normC, callback_newton, verbosity, contparams)  = it
+    (; newton_options) = contparams
+    nmax = contparams.max_steps
+    verbose = verbosity > 0
     ########################
     # η = T(1)
     # u_pred, fval, isconverged, itnewton = newton(F, dF,
@@ -77,22 +94,22 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
     # _U1.u ./= nrm; _U1.p /= nrm
     ########################
     # compute jacobian and derivatives
-    J = BK.jacobian(prob, sol₀.u, getparams(prob))
-    dFdp = (BK.residual(prob, sol₀.u, BK.setparam(prob, p₀ + ϵFD)) .- 
-            BK.residual(prob, sol₀.u, getparams(prob))) ./ ϵFD
+    sol₀ = BK.getpreviousx(state)
+    p₀ = BK.getpreviousp(state)
+    J = BK.jacobian(prob, sol₀, getparams(prob))
+    dFdp = BK.R01(prob, sol₀, BK.setparam(prob, p₀))
 
     # compute initial tangent
     U1 = _get_tangent(J, dFdp, length(prob.u0), linear_algo)
 
     # initialize the vector of Taylor1 expansions
     n = length(prob.u0)
-    a = Taylor1(T, alg.order)
     polu = Array{Taylor1{T}}(undef, n)
-    polp = Taylor1([p₀, U1.p], alg.order)
+    polp = Taylor1([p₀, U1.p], anm.order)
     tmp = copy(prob.u0)
 
-    for i in eachindex(sol₀.u)
-        @inbounds polu[i] = Taylor1( [sol₀.u[i], U1.u[i]], alg.order )
+    for i in eachindex(sol₀)
+        @inbounds polu[i] = Taylor1( [sol₀[i], U1.u[i]], anm.order )
     end
 
     # continuation loop
@@ -104,7 +121,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
         taylorstep!(prob, J, dFdp, U1, tmp, polu, polp, linear_algo)
 
         # compute radius using that tmp contains Rk
-        am = (alg.tol / normC(tmp)) ^ (1/alg.order)
+        am = (anm.tol / normC(tmp)) ^ (1/anm.order)
         verbose && println("\n──▶ $ii, radius = $am, pmax = ", polp(am))
 
         if isfinite(am) == false
@@ -114,7 +131,9 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
         end
 
         # save series
-        push!(resu, deepcopy(polu)); push!(resp, deepcopy(polp)); push!(radius, am)
+        push!(resu, deepcopy(polu))
+        push!(resp, deepcopy(polp))
+        push!(radius, am)
 
         # compute last point given by series
         _x0 = polu(am); _p0 = polp(am)
@@ -131,10 +150,7 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
 
         # update derivatives
         J = BK.jacobian(prob, sol₀.u, getparams(sol₀.prob))
-        dFdp = (BK.residual(prob, sol₀.u, BK.setparam(prob, _p0 + ϵFD)) .-
-                BK.residual(prob, sol₀.u, getparams(sol₀.prob))) ./ ϵFD
-
-        # dFdp .= (F(u0, set(par, lens, _p0 + ϵFD)) .- F(u0, set(par, lens, _p0))) ./ ϵFD
+        dFdp = BK.R01(prob, sol₀.u, BK.setparam(prob, _p0))
 
         # compute tangent
         U1 = _get_tangent(J, dFdp, length(prob.u0), linear_algo)
@@ -147,27 +163,32 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
             polu[ii][1] = U1.u[ii]
         end
 
-        if (contParams.p_min <= polp(am) <= contParams.p_max) == false
+        if (contparams.p_min <= polp(am) <= contparams.p_max) == false
             @warn "Hitting boundary, polp(am) = $(polp(am))"
             break
         end
     end
     verbose && println("")
-    _save!(contres, it, states[1], resu, resp, radius)
+    _save!(contres, it, state, resu, resp, radius)
     return ANMResult(resu, resp, radius, contres)
 end
 
-function _get_tangent(J, dFdp, n, linear_algo)
-    T = eltype(dFdp)
-    u1, p1, iscv, itlin = linear_algo(J, dFdp,
-                rand(n), rand(),
-                zeros(n), one(T))
+function BK.continuation!(it::BK.ContIterable{Tk, Tp, Ta}, state::BK.ContState, contres::BK.ContResult) where {Tk<:BK.AbstractContinuationKind, Tp, Ta <: ANM}
+    _continuation!(it, state, contres)
+end
+
+function _get_tangent(J, dFdp, n, bls_linear_algo) # TODO: factorize problem
+    𝒯 = eltype(dFdp)
+    u1, p1, iscv, itlin = bls_linear_algo(J, dFdp,
+                        my_rand(dFdp), rand(𝒯),
+                        BK.VI.zerovector(dFdp), one(𝒯))
     ~iscv && @error "Initial tangent computation failed"
     nrm =  √(dot(u1,u1) + p1^2)
     U1 = BK.BorderedArray(u1./nrm, p1/nrm)
+    return U1
 end
 
-function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo) where T
+function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, bls_linear_algo) where T
     order = TS.order(polp)
     for ord in 2:order
         R = residual(prob, polU, BK.setparam(prob, polp))
@@ -175,7 +196,7 @@ function taylorstep!(prob, J, dFdp, U1, tmp, polU, polp::Taylor1{T}, linear_algo
         for ii in eachindex(tmp)
             tmp[ii] = R[ii][ord]
         end
-        Uk, λk, iscv, itlin = linear_algo(J, dFdp,
+        Uk, λk, iscv, itlin = bls_linear_algo(J, dFdp,
                     U1.u, U1.p,
                     -tmp, zero(T))
         ~iscv && @warn "Bordered Linear solver did not converge"
@@ -200,7 +221,6 @@ function _contresult(prob,
                     recordFromSolution, 
                     get_eigen_elements )
     x0 = prob.u0
-    par0 = BK.getparams(prob)
     pt = recordFromSolution(x0, 0.)
     pts = BK.mergefromuser(pt, (param = 0.0, am = 0.0, ip = 1, itnewton = 0, ds = 0., step = 0, n_imag = 0, n_unstable = 0, stable = false))
 
@@ -243,6 +263,10 @@ function _save!(contres, it, state, resu, resp, radius)
                     @debug interval
                     if it.contparams.detect_bifurcation > 2
                         sbif, interval = locate_bifurcation(it, Sr[is-1], contres.n_unstable[end-1], s, n_unstable, ip, resu, resp; verbose = it.verbosity == 3)
+                        # update state
+                        copyto!(state.z.u, resu[ip](sbif))
+                        state.z_old.p = state.z.p
+                        state.z.p = resp[ip](sbif)
                         status = :converged
                     end
                     # save the bifurcation point
@@ -254,16 +278,16 @@ function _save!(contres, it, state, resu, resp, radius)
     end
 end
 
-function get_eigen_elements(resu, resp, prob, _s::Number, _ip::Int, it)
-    _J = jacobian(prob, resu[_ip](_s), BK.setparam(prob, resp[_ip](_s)))
+function get_eigen_elements(resu, resp, prob, s::Number, ip::Int, it)
+    _J = jacobian(prob, resu[ip](s), BK.setparam(prob, resp[ip](s)))
     return it.contparams.newton_options.eigsolver(_J, it.contparams.nev)
 end
 
-function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbose = false)
+function locate_bifurcation(it, _s1, _n1, _s2, _n2, ip::Int, resu, resp; verbose = false)
     getinterval(a,b) = (min(a,b), max(a,b))
     contparams = it.contparams
     # interval which contains the bifurcation point
-    interval = getinterval(resp[_ip](_s1), resp[_ip](_s2))
+    interval = getinterval(resp[ip](_s1), resp[ip](_s2))
     indinterval = 2 # index of active bound in the bisection, allows to track interval
 
     # we compute the number of changes in n_unstable
@@ -276,7 +300,7 @@ function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbos
 
     biflocated = true
     while step_bis < contparams.max_bisection_steps
-        eiginfo = get_eigen_elements(resu, resp, it.prob, s, _ip, it)
+        eiginfo = get_eigen_elements(resu, resp, it.prob, s, ip, it)
         isstable, n_unstable, n_imag = BK.is_stable(contparams, eiginfo[1])
         if n_pred == n_unstable
             δs /= 2
@@ -285,10 +309,10 @@ function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbos
             n_inversion += 1
             indinterval = (indinterval == 2) ? 1 : 2
         end
-        step_bis > 0 && (interval = BK.@set interval[indinterval] = resp[_ip](s))
+        step_bis > 0 && (interval = BK.@set interval[indinterval] = resp[ip](s))
         verbose &&    printstyled(color=:blue,
             "────▶ $(step_bis) - [Loc-Bif] (n1, nc, n2) = ",(_n1, n_unstable, _n2),
-            ", p = ", resp[_ip](s), ", s = $s, #reverse = ", n_inversion,
+            ", p = ", resp[ip](s), ", s = $s, #reverse = ", n_inversion,
             "\n────▶ bifurcation ∈ ", getinterval(interval...),
             ", precision = ", interval[2] - interval[1],
             "\n────▶ 5 Eigenvalues closest to ℜ=0:\n")
@@ -306,6 +330,11 @@ function locate_bifurcation(it, _s1, _n1, _s2, _n2, _ip::Int, resu, resp; verbos
         s += δs
         step_bis += 1
     end
-    verbose && printstyled(color=:red, "────▶ Found at p = ", resp[_ip](s), ", δn = ", abs(2n_unstable-_n1-_n2)," from p = ",resp[_ip](_s2),"\n")
+    verbose && printstyled(color=:red, "────▶ Found at p = ", resp[ip](s), ", δn = ", abs(2n_unstable-_n1-_n2)," from p = ",resp[ip](_s2),"\n")
     return s, getinterval(interval...)
 end
+
+my_rand!(x) = Random.rand!(x)
+my_rand(x) = Random.rand!(BK._copy(x))
+my_rand(x::BK.VI.MinimalVec) = Random.rand!(BK._copy(x.vec))
+# my_rand(y::BK.BorderedArray{T, V}) where {T, V} = (x = BK._copy(y);_rand!(x);x)

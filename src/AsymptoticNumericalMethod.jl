@@ -1,6 +1,6 @@
 module AsymptoticNumericalMethod
     import BifurcationKit as BK
-    using ForwardDiff, TaylorIntegration
+    using ForwardDiff, TaylorIntegration, Random
     import TaylorSeries as TS
     using DocStringExtensions
 

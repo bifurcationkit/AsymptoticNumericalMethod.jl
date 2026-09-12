@@ -26,11 +26,14 @@ function Base.getproperty(br::ANMResult, s::Symbol)
     end
 end
 
-@inline BK.haseigenvalues(br::ANMResult) = false
+@inline BK.haseigenvalues(::ANMResult) = false
 @inline BK.kernel_dimension(br::ANMResult, ind) = BK.kernel_dimension(br.branch, ind)
 @inline BK.get_contresult(br::ANMResult) = br.branch
+BK.getkind(br::ANMResult) = BK.getkind(br.branch)
+BK.getalg(br::ANMResult) = BK.getalg(br.branch)
 
 function Base.show(io::IO, br::ANMResult; comment = "", prefix = " ")
-    comment =  "\n" * prefix * "├─ $(length(br.polU)) series of degree $(br.alg.order), tol = $(br.alg.tol)"
+    anm = BK.getalg(br)
+    comment =  "\n" * prefix * "├─ $(length(br.polU)) series of degree $(anm.order), tol = $(anm.tol)"
     BK.show(io, BK.get_contresult(br); comment = comment)
 end
