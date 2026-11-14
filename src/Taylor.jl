@@ -72,9 +72,9 @@ function BK.continuation(prob::BK.AbstractBifurcationProblem,
     states = BK.iterate_from_two_points(it, sol₀.u, p₀, copy(sol₀.u), p₀ + ds / η; _verbosity = verbosity)
 
     # variable to hold the result from continuation, i.e. a branch
-    contres = BK.ContResult(it, states[1])
+    contres = BK.ContResult(it, states)
 
-    return _continuation!(it, states[1], contres)
+    return _continuation!(it, states, contres)
 end
 
 function _continuation!(it::BK.ContIterable{Tk,Tp,Ta,T}, state, contres) where {Tk,Tp,Ta,T}
