@@ -98,8 +98,12 @@ br1 = continuation(br, 3; kwargsC...)
 plot(br, br1)
 #################################################################################
 optanm = ContinuationPar(opts_br, ds= 0.01, n_inversion = 6, max_bisection_steps = 15, max_steps = 15,)# p_min = 0.1)
-
 branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 3)
 
 plot(branm; plotseries = true)
 plot(branm; plotseries = false)
+#################################################################################
+branm1 = continuation(deepcopy(branm), 3, ContinuationPar(optanm, ds = -0.01, detect_bifurcation = 0, max_steps = 15,); start_with_eigen = Val(false), verbosity = 2, pot = true)
+
+plot(branm1)
+plot!(branm)

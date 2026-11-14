@@ -23,12 +23,11 @@ sol = zeros(n)
 par = (α = 0.0, )
 optnewton = NewtonPar(tol = 1e-11, verbose = true)
 
-prob = BifurcationProblem(F_chan, sol, par, (@optic _.α); record_from_solution = (x,p;k...) -> norminf(x))
+prob = BifurcationProblem(F_chan, sol, par, (@optic _.α); record_from_solution = (x,p;k...) -> norminf(x), R01 = BK.FiniteDifferences())
 
 optcont0 = ContinuationPar(dsmin = 0.01, dsmax = 0.05, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9), max_steps = 550)
 br0 = @time continuation(prob, PALC(),optcont0, normC = norminf, verbosity = 0)
 plot(br0)
-
 #################################################################################
 # optanm = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e-9))
 #
@@ -45,7 +44,5 @@ plot(br0)
 
 #################################################################################
 optanm = ContinuationPar(dsmin = 0.01, dsmax = 0.15, ds= 0.01, p_max = 4.1, newton_options = NewtonPar(tol = 1e1, verbose = false), detect_bifurcation = 3, max_steps = 6)
-
 br_anm = @time continuation(prob, ANM(30, 1e-6), optanm, normC = norm, verbosity = 1)
-
 plot(br_anm)

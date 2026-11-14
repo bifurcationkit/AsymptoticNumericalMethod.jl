@@ -31,6 +31,8 @@ end
 @inline BK.get_contresult(br::ANMResult) = br.branch
 BK.getkind(br::ANMResult) = BK.getkind(br.branch)
 BK.getalg(br::ANMResult) = BK.getalg(br.branch)
+BK.getprob(br::ANMResult) = BK.getprob(br.branch)
+BK.haseigenvector(br::ANMResult) = BK.haseigenvector(br.branch)
 
 function Base.show(io::IO, br::ANMResult; comment = "", prefix = " ")
     anm = BK.getalg(br)
