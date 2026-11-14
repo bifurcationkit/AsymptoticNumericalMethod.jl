@@ -27,7 +27,7 @@ plot(br0, br1)
 #################################################################################
 optanm = ContinuationPar(optcont, ds= 0.01, newton_options = NewtonPar(tol = 1e-9, verbose = false), detect_bifurcation = 3, n_inversion = 6, max_bisection_steps = 15, max_steps = 15, )#p_max = 0.1)
 
-branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 2)
+branm = @time continuation(prob, ANM(20, 1e-8), optanm, normC = norminf, verbosity = 0)
 
 plot(branm)
 plot(branm, plotseries = true)
@@ -46,5 +46,7 @@ begin
     title!("")
 end
 #################################################################################
-# WIP !!! does not work yet
-# branm1 = continuation(branm, 2)
+branm1 = continuation(deepcopy(branm), 2, ContinuationPar(optanm, ds = -0.01); start_with_eigen = Val(false))
+
+plot(branm1)
+plot!(branm)
